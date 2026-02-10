@@ -21,7 +21,7 @@ Flutter is Google's UI toolkit for building beautiful, natively compiled applica
    brew install --build-from-source ./flutter-sdk.rb
    ```
 
-### Option 2: Install from a tap (if published)
+### Option 2: Install from a tap
 
 ```bash
 brew tap TeckniX/flutter-sdk
