@@ -1,0 +1,50 @@
+name: Build and Test Brew Formula
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Set up Homebrew
+      uses: Homebrew/actions/setup-homebrew@master
+      
+    - name: Cache Homebrew Bundler RubyGems
+      id: cache
+      uses: actions/cache@v4
+      with:
+        path: ${{ steps.setup-homebrew.outputs.gems-path }}
+        key: ${{ runner.os }}-rubygems-${{ steps.setup-homebrew.outputs.gems-hash }}
+        restore-keys: ${{ runner.os }}-rubygems-
+        
+    - name: Install Homebrew Bundler RubyGems
+      if: steps.cache.outputs.cache-hit != 'true'
+      run: brew install-bundler-gems --local
+      
+    - name: Test formula
+      run: |
+        brew audit --new-formula flutter-sdk.rb
+        brew style flutter-sdk.rb
+        brew install --build-from-source ./flutter-sdk.rb
+        brew test ./flutter-sdk.rb
+        
+    - name: Test Flutter installation
+      run: |
+        flutter --version
+        flutter doctor
+        
+    - name: Uninstall formula (cleanup)
+      if: always()
+      run: brew uninstall flutter-sdk
