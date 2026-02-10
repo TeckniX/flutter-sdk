@@ -16,14 +16,14 @@ jobs:
         
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       
     - name: Set up Homebrew
       uses: Homebrew/actions/setup-homebrew@master
       
     - name: Cache Homebrew Bundler RubyGems
       id: cache
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: ${{ steps.setup-homebrew.outputs.gems-path }}
         key: ${{ runner.os }}-rubygems-${{ steps.setup-homebrew.outputs.gems-hash }}
