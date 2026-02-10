@@ -1,4 +1,4 @@
-name: Build and Test Brew Formula
+name: Test Flutter SDK Formula
 
 on:
   push:
@@ -34,16 +34,25 @@ jobs:
       run: brew install-bundler-gems --local
       
     - name: Test formula
+      working-directory: Formula
       run: |
         brew audit --new-formula flutter-sdk.rb
         brew style flutter-sdk.rb
-        brew install --build-from-source ./flutter-sdk.rb
-        brew test ./flutter-sdk.rb
+        brew install --verbose ./flutter-sdk.rb
         
     - name: Test Flutter installation
       run: |
+        export PATH="$(brew --prefix flutter-sdk)/bin:$PATH"
         flutter --version
-        flutter doctor
+        flutter doctor --no-pub
+        
+    - name: Test basic Flutter project creation
+      run: |
+        export PATH="$(brew --prefix flutter-sdk)/bin:$PATH"
+        cd /tmp
+        flutter create test_app
+        cd test_app
+        flutter analyze --no-pub
         
     - name: Uninstall formula (cleanup)
       if: always()

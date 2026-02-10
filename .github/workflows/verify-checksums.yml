@@ -1,0 +1,56 @@
+name: Verify Checksums
+
+on:
+  push:
+    paths:
+      - 'Formula/flutter-sdk.rb'
+    branches: [ main, master ]
+  pull_request:
+    paths:
+      - 'Formula/flutter-sdk.rb'
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  verify-checksums:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '3.0'
+
+    - name: Verify checksums
+      run: ruby .github/scripts/verify_checksums.rb
+
+  verify-downloads:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Homebrew
+      uses: Homebrew/actions/setup-homebrew@master
+
+    - name: Test download and installation
+      run: |
+        cd Formula
+        brew install --verbose ./flutter-sdk.rb
+        export PATH="$(brew --prefix flutter-sdk)/bin:$PATH"
+        flutter --version
+        
+        # Verify we can create a basic project
+        cd /tmp
+        flutter create test_app
+        cd test_app
+        flutter analyze --no-pub
+        
+    - name: Cleanup
+      if: always()
+      run: brew uninstall flutter-sdk

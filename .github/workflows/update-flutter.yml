@@ -1,0 +1,54 @@
+name: Update Flutter Version
+
+on:
+  schedule:
+    # Run daily at 9 AM UTC
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+
+jobs:
+  update-flutter:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '3.0'
+
+    - name: Install dependencies
+      run: |
+        gem install json
+
+    - name: Check for new Flutter releases
+      id: check-release
+      run: |
+        ruby .github/scripts/check_flutter_release.rb
+
+    - name: Update formula if new version available
+      if: steps.check-release.outputs.needs-update == 'true'
+      run: |
+        ruby .github/scripts/update_formula.rb "${{ steps.check-release.outputs.new-version }}" "${{ steps.check-release.outputs.macos-x64-sha }}" "${{ steps.check-release.outputs.macos-arm64-sha }}" "${{ steps.check-release.outputs-linux-sha }}"
+
+    - name: Create Pull Request
+      if: steps.check-release.outputs.needs-update == 'true'
+      uses: peter-evans/create-pull-request@v6
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        commit-message: "Update Flutter to ${{ steps.check-release.outputs.new-version }}"
+        title: "Update Flutter to ${{ steps.check-release.outputs.new-version }}"
+        body: |
+          Automated update to Flutter ${{ steps.check-release.outputs.new-version }}
+          
+          ## Changes:
+          - Updated Flutter version to ${{ steps.check-release.outputs.new-version }}
+          - Updated checksums for all platforms
+          - Formula uses pre-built binaries from official Flutter releases
+          
+          This PR was created automatically by the update workflow.
+        branch: update-flutter-${{ steps.check-release.outputs.new-version }}
+        delete-branch: true

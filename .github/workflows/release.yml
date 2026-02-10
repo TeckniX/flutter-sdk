@@ -1,0 +1,50 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Homebrew
+      uses: Homebrew/actions/setup-homebrew@master
+
+    - name: Test formula before release
+      run: |
+        cd Formula
+        brew audit --strict --online flutter-sdk.rb
+        brew style --fix flutter-sdk.rb
+        brew install --verbose ./flutter-sdk.rb
+        
+    - name: Test Flutter installation
+      run: |
+        export PATH="$(brew --prefix flutter-sdk)/bin:$PATH"
+        flutter --version
+        flutter doctor --no-pub
+        
+    - name: Create Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Flutter ${{ github.ref_name }}
+        body: |
+          Flutter Homebrew Formula Release ${{ github.ref_name }}
+          
+          ## Installation
+          ```bash
+          brew tap flutter-sdk/flutter-sdk
+          brew install flutter-sdk
+          ```
+          
+          ## Version
+          Flutter SDK version from this release can be found in the formula.
+        draft: false
+        prerelease: false
